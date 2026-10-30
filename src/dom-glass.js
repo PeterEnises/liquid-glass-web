@@ -53,8 +53,9 @@ if (chromium && !matchMedia('(prefers-reduced-transparency: reduce)').matches) {
     const { width: w, height: h } = host.getBoundingClientRect();
     if (w < 8 || h < 8) return;
     const r = parseFloat(getComputedStyle(host).borderTopLeftRadius) || h / 2;
-    const bevel = Math.min(h / 2, w / 2, host.dataset.glassPreset === 'bar' ? 22 : 14);
-    const scale = host.dataset.glassPreset === 'bar' ? 70 : 40;
+    // ширина кромки и сила изгиба: из data-glass-bevel / data-glass-bend, иначе по пресету
+    const bevel = Math.min(h / 2, w / 2, +host.dataset.glassBevel || (host.dataset.glassPreset === 'bar' ? 22 : 14));
+    const scale = +host.dataset.glassBend || (host.dataset.glassPreset === 'bar' ? 70 : 40);
     const id = `lg-dom-${++gen}`;
     const old = host._lgDom; if (old) old.remove();
     const f = document.createElementNS('http://www.w3.org/2000/svg', 'filter');
@@ -72,7 +73,8 @@ if (chromium && !matchMedia('(prefers-reduced-transparency: reduce)').matches) {
       <feComposite in="rg" in2="b" operator="arithmetic" k2="1" k3="1"/>`;
     svg.append(f);
     host._lgDom = f;
-    target.style.backdropFilter = `url(#${id}) blur(1.5px) saturate(1.6)`;
+    const blur = host.dataset.glassBlur ?? 1.5;
+    target.style.backdropFilter = `url(#${id}) blur(${blur}px) saturate(1.6)`;
   };
 
   const hosts = () => document.querySelectorAll('[data-glass]');
