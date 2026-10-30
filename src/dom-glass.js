@@ -25,7 +25,8 @@ if (chromium && !matchMedia('(prefers-reduced-transparency: reduce)').matches) {
   const peak = bend(1e-4);
 
   // Карта: R — сдвиг по X, G — по Y, 128 — на месте. У кромки берём картинку изнутри (вдоль нормали).
-  const mapFor = (w, h, r, bevel) => {
+  // zoom > 1 — середина работает как лупа: картинку под стеклом увеличиваем от центра
+  const mapFor = (w, h, r, bevel, scale, base, zoom = 1) => {
     const s = 0.5, W = Math.max(2, Math.round(w * s)), H = Math.max(2, Math.round(h * s));
     const c = Object.assign(document.createElement('canvas'), { width: W, height: H });
     const ctx = c.getContext('2d'), img = ctx.createImageData(W, H);
@@ -39,8 +40,11 @@ if (chromium && !matchMedia('(prefers-reduced-transparency: reduce)').matches) {
       if (out > 0) { nx = ox / out * Math.sign(px); ny = oy / out * Math.sign(py); }
       else if (qx > qy) nx = Math.sign(px); else ny = Math.sign(py);
       const k = d < bevel ? bend(d / bevel) / peak : 0;
+      const m = 255 * (1 - 1 / zoom) / scale; // сдвиг лупы в долях карты
       const n = (j * W + i) * 4;
-      img.data[n] = 128 + 127 * nx * k; img.data[n + 1] = 128 + 127 * ny * k; img.data[n + 2] = 128; img.data[n + 3] = 255;
+      img.data[n] = 128 + 127 * nx * k * base / scale + px * m;
+      img.data[n + 1] = 128 + 127 * ny * k * base / scale + py * m;
+      img.data[n + 2] = 128; img.data[n + 3] = 255;
     }
     ctx.putImageData(img, 0, 0);
     return c.toDataURL();
@@ -55,14 +59,17 @@ if (chromium && !matchMedia('(prefers-reduced-transparency: reduce)').matches) {
     const r = parseFloat(getComputedStyle(host).borderTopLeftRadius) || h / 2;
     // ширина кромки и сила изгиба: из data-glass-bevel / data-glass-bend, иначе по пресету
     const bevel = Math.min(h / 2, w / 2, +host.dataset.glassBevel || (host.dataset.glassPreset === 'bar' ? 22 : 14));
-    const scale = +host.dataset.glassBend || (host.dataset.glassPreset === 'bar' ? 70 : 40);
+    const base = +host.dataset.glassBend || (host.dataset.glassPreset === 'bar' ? 70 : 40);
+    const zoom = +host.dataset.glassZoom || 1;
+    // при лупе сдвиг у краёв больше: шкалу смещения расширяем, изгиб кромки пересчитываем к прежней силе
+    const scale = Math.max(base, Math.ceil(2.2 * Math.max(w, h) / 2 * (1 - 1 / zoom)));
     const id = `lg-dom-${++gen}`;
     const old = host._lgDom; if (old) old.remove();
     const f = document.createElementNS('http://www.w3.org/2000/svg', 'filter');
     f.id = id;
     for (const [k, v] of [['x', 0], ['y', 0], ['width', w], ['height', h], ['filterUnits', 'userSpaceOnUse'], ['primitiveUnits', 'userSpaceOnUse'], ['color-interpolation-filters', 'sRGB']]) f.setAttribute(k, v);
     const sp = 0.06; // радужная кайма: каналы гнутся чуть по-разному
-    f.innerHTML = `<feImage href="${mapFor(w, h, r, bevel)}" x="0" y="0" width="${w}" height="${h}" preserveAspectRatio="none" result="map"/>
+    f.innerHTML = `<feImage href="${mapFor(w, h, r, bevel, scale, base, zoom)}" x="0" y="0" width="${w}" height="${h}" preserveAspectRatio="none" result="map"/>
       <feDisplacementMap in="SourceGraphic" in2="map" scale="${-scale}" xChannelSelector="R" yChannelSelector="G" result="dr"/>
       <feDisplacementMap in="SourceGraphic" in2="map" scale="${-scale * (1 + sp)}" xChannelSelector="R" yChannelSelector="G" result="dg"/>
       <feDisplacementMap in="SourceGraphic" in2="map" scale="${-scale * (1 + 2 * sp)}" xChannelSelector="R" yChannelSelector="G" result="db"/>
