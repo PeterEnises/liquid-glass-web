@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>liquid-glass-web: демо</title>
+<style>
+  :root { --ink: #1b2230; --paper: #f5f7fa; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 16px/1.5 system-ui, sans-serif; color: var(--ink); background: var(--paper); }
+  .bar { position: sticky; top: 12px; z-index: 10; display: flex; align-items: center; gap: 24px; width: min(1100px, calc(100% - 24px)); margin: 12px auto 0; height: 60px; padding: 0 8px 0 20px; border-radius: 999px; background: rgb(245 247 250 / .6); -webkit-backdrop-filter: blur(20px) saturate(1.8); backdrop-filter: blur(20px) saturate(1.8); }
+  .bar[data-glass-tone=dark] { color: #fff; }
+  .bar b { font-weight: 700; } .bar nav { display: flex; gap: 18px; } .bar a { color: inherit; text-decoration: none; }
+  .bar .cta { margin-left: auto; height: 44px; padding: 0 22px; display: grid; place-items: center; border-radius: 999px; background: #ffed35; color: var(--ink); font-weight: 600; }
+  .hero { position: relative; margin: -72px 0 0; height: 80vh; }
+  .hero canvas { width: 100%; height: 100%; display: block; }
+  .dot { position: absolute; right: 32px; bottom: 32px; width: 64px; height: 64px; border: 0; border-radius: 50%; background: rgb(0 0 0 / .3); color: #ffed35; font-size: 24px; }
+  main { width: min(1100px, calc(100% - 32px)); margin: 0 auto; padding: 48px 0 120vh; }
+  main h1 { font-size: 48px; line-height: 1.1; margin: 0 0 16px; }
+</style>
+</head>
+<body>
+<header class="bar" data-glass data-glass-preset="bar" data-glass-over=".hero">
+  <b>LIQUID</b><nav><a href="#">Каталог</a><a href="#">О нас</a><a href="#">Контакты</a></nav><a class="cta" href="#">Кнопка</a>
+</header>
+<figure class="hero" data-glass-media="canvas"><canvas id="scene" width="1600" height="900"></canvas>
+  <button class="dot" type="button" data-glass="circle" data-glass-preset="dot" data-glass-over=".hero" aria-label="Пример кнопки">▶</button>
+</figure>
+<main>
+  <h1>Прокрутите страницу</h1>
+  <p>Над картинкой шапка преломляет её (WebGL). Над текстом — в Chrome/Edge преломляет живую страницу, в Safari и Firefox матовая.</p>
+  <p>Картинка нарисована на canvas, чтобы в демо не было чужих фотографий.</p>
+</main>
+<script>
+// сцена: полосы и круги — на них хорошо видно преломление
+const c = document.getElementById('scene'), x = c.getContext('2d');
+const g = x.createLinearGradient(0, 0, 1600, 900); g.addColorStop(0, '#1d3b8f'); g.addColorStop(1, '#e8743b');
+x.fillStyle = g; x.fillRect(0, 0, 1600, 900);
+for (let i = 0; i < 40; i++) { x.fillStyle = i % 2 ? 'rgb(255 255 255 / .85)' : 'rgb(0 0 0 / .25)'; x.fillRect(i * 40, 0, 14, 900); }
+for (let i = 0; i < 12; i++) { x.beginPath(); x.arc(120 + i * 130, 450 + Math.sin(i) * 200, 60, 0, 7); x.fillStyle = `hsl(${i * 30} 80% 60%)`; x.fill(); }
+</script>
+<script type="module" src="../src/liquid-glass.js"></script>
+<script type="module" src="../src/dom-glass.js"></script>
+</body>
+</html>
